@@ -1,8 +1,9 @@
 use axum::{
     response::Html, routing::{get, post}, Json, Router
 };
+use http::Method;
 use serde::{Deserialize, Serialize};
-use tracing_subscriber::fmt::format;
+use tower_http::cors::{Any, CorsLayer};
 
 #[derive(Deserialize)]
 struct MessageInput {
@@ -29,10 +30,15 @@ async fn root() -> Html<&'static str> {
 
 #[tokio::main]
 async fn main() {
-    let app = Router::new()
-    .route("/", get(root))
-    .route("/api/messages", post(handle_message));
+    let cors = CorsLayer::new()
+        .allow_origin(Any)
+        .allow_methods([Method::GET, Method::POST]);
 
-    let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
+    let app = Router::new()
+        .route("/", get(root))
+        .route("/api/messages", post(handle_message))
+        .layer(cors);
+
+    let listener = tokio::net::TcpListener::bind("0.0.0.0:8080").await.unwrap();
     axum::serve(listener, app).await.unwrap();
 }
